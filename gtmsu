@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# a "graphical tmsu frontend" which at this point only supports one use case:
+# adding tags by selecting from a list of existing tags (and/or making a new one)
+# to a list of specified files
+
+# dependencies: zenity, sqlite3
+db=${TMSU_DB:-$HOME/.tmsu/default.db}
+
+function list_all_tags () {
+    echo 'select name from tag;' | sqlite3 $db
+}
+
+if [ "$1" == 'tag' ]; then
+    shift
+    files=("$@")
+    tags=$(list_all_tags | zenity --list --title="gtmsu tag" --text="Enter tag(s) to apply" --column=tags --editable --multiple --separator=' ')
+    if [ $? -eq 0 -a -n "$tags" ]; then
+        out=$(mktemp /tmp/tmsu.XXXX.out)
+        err=$(mktemp /tmp/tmsu.XXXX.err)
+        tmsu tag --tags "$tags" "${files[@]}" > $out 2> $err
+        ret=$?
+        txt="Return code: $ret\n\nStderr:\n$(cat $err)\n\nStdout:\n$(cat $out)"
+        if [ $ret -gt 0 ]; then
+            zenity --warning --text="$txt"
+        else
+            zenity --info --text="$txt"
+        fi
+    fi
+fi
+
