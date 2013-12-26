@@ -28,4 +28,18 @@ if [ "$1" == 'tag' ]; then
         fi
     fi
 fi
-
+if [ "$1" == 'untag-all' ]; then
+    echo "here"
+    shift
+    file="$1"
+    out=$(mktemp /tmp/tmsu.XXXX.out)
+    err=$(mktemp /tmp/tmsu.XXXX.err)
+    tmsu untag --all "$(readlink "$file")" > $out 2> $err
+    ret=$?
+    txt="Return code: $ret\n\nStderr:\n$(cat $err)\n\nStdout:\n$(cat $out)"
+    if [ $ret -gt 0 ]; then
+        zenity --warning --text="$txt"
+    else
+        zenity --info --text="$txt"
+    fi
+fi
